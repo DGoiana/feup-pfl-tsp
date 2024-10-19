@@ -15,16 +15,27 @@ type Distance = Int
 type RoadMap = [(City, City, Distance)]
 
 cities :: RoadMap -> [City]
-cities = undefined -- modifiy this line to implement the solution, for each exercise not solved, leave the function definition like this
+cities [] = []
+cities ((c1,c2,_dist):xs) = [c1,c2] ++ cities xs
 
 areAdjacent :: RoadMap -> City -> City -> Bool
-areAdjacent = undefined
+areAdjacent [] c1 c2 = False
+areAdjacent ((x1,x2,_dist):xs) c1 c2
+  | x1 == c1 && x2 == c2 = True
+  | otherwise = areAdjacent xs c1 c2
 
 distance :: RoadMap -> City -> City -> Maybe Distance
-distance = undefined
+distance [] c1 c2 = Nothing
+distance ((x1,x2,d):xs) c1 c2
+  | x1 == c1 && x2 == c2 = Just d
+  | otherwise = distance xs c1 c2
 
 adjacent :: RoadMap -> City -> [(City, Distance)]
-adjacent = undefined
+adjacent [] _ = []
+adjacent ((c1,c2,dist):xs) c
+  | c1 == c = (c2,dist) : adjacent xs c
+  | c2 == c = (c1,dist) : adjacent xs c
+  | otherwise = adjacent xs c
 
 pathDistance :: RoadMap -> Path -> Maybe Distance
 pathDistance = undefined
