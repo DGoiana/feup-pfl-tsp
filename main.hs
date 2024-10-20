@@ -16,32 +16,44 @@ type RoadMap = [(City, City, Distance)]
 
 cities :: RoadMap -> [City]
 cities [] = []
-cities ((c1,c2,_dist):xs) = [c1,c2] ++ cities xs
+cities ((c1, c2, _dist) : xs) = [c1, c2] ++ cities xs
 
 areAdjacent :: RoadMap -> City -> City -> Bool
 areAdjacent [] c1 c2 = False
-areAdjacent ((x1,x2,_dist):xs) c1 c2
+areAdjacent ((x1, x2, _dist) : xs) c1 c2
   | x1 == c1 && x2 == c2 = True
+  | x1 == c2 && x2 == c1 = True
   | otherwise = areAdjacent xs c1 c2
 
 distance :: RoadMap -> City -> City -> Maybe Distance
 distance [] c1 c2 = Nothing
-distance ((x1,x2,d):xs) c1 c2
+distance ((x1, x2, d) : xs) c1 c2
   | x1 == c1 && x2 == c2 = Just d
+  | x1 == c2 && x2 == c1 = Just d
   | otherwise = distance xs c1 c2
 
 adjacent :: RoadMap -> City -> [(City, Distance)]
 adjacent [] _ = []
-adjacent ((c1,c2,dist):xs) c
-  | c1 == c = (c2,dist) : adjacent xs c
-  | c2 == c = (c1,dist) : adjacent xs c
+adjacent ((c1, c2, dist) : xs) c
+  | c1 == c = (c2, dist) : adjacent xs c
+  | c2 == c = (c1, dist) : adjacent xs c
   | otherwise = adjacent xs c
 
 pathDistance :: RoadMap -> Path -> Maybe Distance
-pathDistance = undefined
+pathDistance _ [] = Just 0
+pathDistance _ [_] = Just 0
+pathDistance r (c1 : c2 : cs)
+  | areAdjacent r c1 c2 = do
+      d1 <- distance r c1 c2
+      d2 <- pathDistance r (c2 : cs)
+      return (d1 + d2)
+  | otherwise = Nothing
 
 rome :: RoadMap -> [City]
-rome = undefined
+rome [] = []
+rome ((c1, c2, c) : rs)
+  | 
+  |
 
 isStronglyConnected :: RoadMap -> Bool
 isStronglyConnected = undefined
