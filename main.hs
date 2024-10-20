@@ -14,9 +14,16 @@ type Distance = Int
 
 type RoadMap = [(City, City, Distance)]
 
+removeDuplicates :: Eq a => [a] -> [a]
+removeDuplicates [] = []
+removeDuplicates (x:xs) = x : removeDuplicates (filter (/= x) xs)
+
+citiesRec :: RoadMap -> [City]
+citiesRec [] = []
+citiesRec ((c1,c2,_dist):xs) = [c1,c2] ++ cities xs
+
 cities :: RoadMap -> [City]
-cities [] = []
-cities ((c1, c2, _dist) : xs) = [c1, c2] ++ cities xs
+cities roadMap = removeDuplicates (citiesRec roadMap)
 
 areAdjacent :: RoadMap -> City -> City -> Bool
 areAdjacent [] c1 c2 = False
@@ -49,18 +56,46 @@ pathDistance r (c1 : c2 : cs)
       return (d1 + d2)
   | otherwise = Nothing
 
+{- rome :: RoadMap -> [City], returns the names of the cities with the
+highest number of roads connecting to them (i.e. the vertices with the
+highest degree). -}
+{- rome :: RoadMap -> [City] -}
+
 rome :: RoadMap -> [City]
-rome [] = []
-rome ((c1, c2, c) : rs)
-  | 
-  |
+rome rm = [c | (c,num) <- tuples , num == maximum (map (\(x,y) -> y) tuples)]
+    where tuples = [(c,length (adjacent rm c)) | c <- cities rm] 
 
+{- isStronglyConnected :: RoadMap -> Bool, returns a boolean indicat-
+ing whether all the cities in the graph are connected in the roadmap (i.e.,
+if every city is reachable from every other city) -}
 isStronglyConnected :: RoadMap -> Bool
-isStronglyConnected = undefined
+isStronglyConnected rm = length (dfs_ rm [] [(head (map (\(x,_,_)->x) rm))]) == length (cities rm)
 
+dfs_ :: RoadMap -> [City] -> [City] -> [City]
+dfs_ rm visited [] = visited
+dfs_ rm visited (x:xs) 
+    | elem x visited = dfs_ rm visited xs
+    | otherwise = dfs_ rm (x:visited) ((map (\(c,_)-> c) (adjacent rm x)) ++ xs)
+
+{- shortestPath :: RoadMap -> City -> City -> [Path], computes all
+shortest paths [RL99, BG20] connecting the two cities given as input.
+Note that there may be more than one path with the same total distance.
+If there are no paths between the input cities, then return an empty list.
+Note that the (only) shortest path between a city c and itself is [c]. -}
 shortestPath :: RoadMap -> City -> City -> [Path]
 shortestPath = undefined
 
+{- travelSales :: RoadMap -> Path, given a roadmap, returns a solution
+of the Traveling Salesman Problem (TSP). In this problem, a traveling
+salesperson has to visit each city exactly once and come back to the start-
+ing town. The problem is to find the shortest route, that is, the route
+whose total distance is minimum. This problem has a known solution
+using dynamic programming [RL99]. Any optimal TSP path will be ac-
+cepted and the function only needs to return one of them, so the starting
+city (which is also the ending city) is left to be chosen by each group. Note
+that the roadmap might not be a complete graph (i.e. a graph where all
+vertices are connected to all other vertices). If the graph does not have a
+TSP path, then return an empty list -}
 travelSales :: RoadMap -> Path
 travelSales = undefined
 
