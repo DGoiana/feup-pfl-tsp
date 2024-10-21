@@ -14,13 +14,13 @@ type Distance = Int
 
 type RoadMap = [(City, City, Distance)]
 
-removeDuplicates :: Eq a => [a] -> [a]
+removeDuplicates :: (Eq a) => [a] -> [a]
 removeDuplicates [] = []
-removeDuplicates (x:xs) = x : removeDuplicates (filter (/= x) xs)
+removeDuplicates (x : xs) = x : removeDuplicates (filter (/= x) xs)
 
 citiesRec :: RoadMap -> [City]
 citiesRec [] = []
-citiesRec ((c1,c2,_dist):xs) = [c1,c2] ++ cities xs
+citiesRec ((c1, c2, _dist) : xs) = [c1, c2] ++ cities xs
 
 cities :: RoadMap -> [City]
 cities roadMap = removeDuplicates (citiesRec roadMap)
@@ -62,20 +62,21 @@ highest degree). -}
 {- rome :: RoadMap -> [City] -}
 
 rome :: RoadMap -> [City]
-rome rm = [c | (c,num) <- tuples , num == maximum (map (\(x,y) -> y) tuples)]
-    where tuples = [(c,length (adjacent rm c)) | c <- cities rm] 
+rome rm = [c | (c, num) <- tuples, num == maximum (map (\(x, y) -> y) tuples)]
+  where
+    tuples = [(c, length (adjacent rm c)) | c <- cities rm]
 
 {- isStronglyConnected :: RoadMap -> Bool, returns a boolean indicat-
 ing whether all the cities in the graph are connected in the roadmap (i.e.,
 if every city is reachable from every other city) -}
 isStronglyConnected :: RoadMap -> Bool
-isStronglyConnected rm = length (dfs_ rm [] [(head (map (\(x,_,_)->x) rm))]) == length (cities rm)
+isStronglyConnected rm = length (dfs_ rm [] [(head (map (\(x, _, _) -> x) rm))]) == length (cities rm)
 
 dfs_ :: RoadMap -> [City] -> [City] -> [City]
 dfs_ rm visited [] = visited
-dfs_ rm visited (x:xs) 
-    | elem x visited = dfs_ rm visited xs
-    | otherwise = dfs_ rm (x:visited) ((map (\(c,_)-> c) (adjacent rm x)) ++ xs)
+dfs_ rm visited (x : xs)
+  | elem x visited = dfs_ rm visited xs
+  | otherwise = dfs_ rm (x : visited) ((map (\(c, _) -> c) (adjacent rm x)) ++ xs)
 
 {- shortestPath :: RoadMap -> City -> City -> [Path], computes all
 shortest paths [RL99, BG20] connecting the two cities given as input.
@@ -83,7 +84,22 @@ Note that there may be more than one path with the same total distance.
 If there are no paths between the input cities, then return an empty list.
 Note that the (only) shortest path between a city c and itself is [c]. -}
 shortestPath :: RoadMap -> City -> City -> [Path]
-shortestPath = undefined
+shortestPath roadMap start end = findShortestPaths roadMap (bfs [[start]] [])
+  where
+    bfs :: [Path] -> [Path] -> [Path] -- first are the paths to explore, second is the result
+    bfs [] result = result -- no more paths to explore, just return the result
+    bfs (p : ps) result
+      | last p == end = bfs ps (p : result) -- if p is the end city, append it to the result and finish with base case
+      | otherwise = bfs (ps ++ newPaths) result -- otherwise, call bfs with the remaining paths and new ones
+      where
+        lastCity = last p
+        newPaths = [p ++ [c] | (c, _) <- adjacent roadMap lastCity, c `notElem` p] -- find the adjacent nodes of the last city in the tree and add them to the current path
+    findShortestPaths :: RoadMap -> [Path] -> [Path]
+    findShortestPaths r paths = [p | (p, d) <- validPaths, Just d == minDistance] -- just filter all the valid paths to be the ones with minimal distance
+      where
+        distances = map (pathDistance r) paths -- find the distance of all paths
+        validPaths = [(p, d) | (p, Just d) <- zip paths distances] -- filter out all the paths that do not have a valid distance, e.g "Nothing"
+        minDistance = minimum distances -- find the minimum distance
 
 {- travelSales :: RoadMap -> Path, given a roadmap, returns a solution
 of the Traveling Salesman Problem (TSP). In this problem, a traveling
