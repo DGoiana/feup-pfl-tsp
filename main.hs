@@ -1,4 +1,3 @@
-import qualified Data.Maybe
 -- import qualified Data.List
 -- import qualified Data.Array
 -- import qualified Data.Bits
@@ -15,17 +14,21 @@ type Distance = Int
 
 type RoadMap = [(City, City, Distance)]
 
+{- Complexity: O(n) -}
 removeDuplicates :: (Eq a) => [a] -> [a]
 removeDuplicates [] = []
 removeDuplicates (x : xs) = x : removeDuplicates (filter (/= x) xs)
 
+{- Complexity: O(n) -}
 citiesRec :: RoadMap -> [City]
 citiesRec [] = []
 citiesRec ((c1, c2, _dist) : xs) = [c1, c2] ++ cities xs
 
+{- Complexity: O(n^2) -}
 cities :: RoadMap -> [City]
 cities roadMap = removeDuplicates (citiesRec roadMap)
 
+{- Complexity: O(n) -}
 areAdjacent :: RoadMap -> City -> City -> Bool
 areAdjacent [] c1 c2 = False
 areAdjacent ((x1, x2, _dist) : xs) c1 c2
@@ -33,6 +36,7 @@ areAdjacent ((x1, x2, _dist) : xs) c1 c2
   | x1 == c2 && x2 == c1 = True
   | otherwise = areAdjacent xs c1 c2
 
+{- Complexity: O(n) -}
 distance :: RoadMap -> City -> City -> Maybe Distance
 distance [] c1 c2 = Nothing
 distance ((x1, x2, d) : xs) c1 c2
@@ -40,12 +44,14 @@ distance ((x1, x2, d) : xs) c1 c2
   | x1 == c2 && x2 == c1 = Just d
   | otherwise = distance xs c1 c2
 
+{- Complexity: O(1) -}
+{- Ignore suggestions, cannot import Data.Maybe -}
 intDistance:: RoadMap -> City -> City -> Distance
-intDistance rm c1 c2
-  | Data.Maybe.isNothing d =  1000000
-  | otherwise = Data.Maybe.fromJust d
-  where d = distance rm c1 c2
+intDistance rm c1 c2 = case distance rm c1 c2 of
+  Nothing -> 100000
+  Just d -> d
 
+{- Complexity: O(n) -}
 adjacent :: RoadMap -> City -> [(City, Distance)]
 adjacent [] _ = []
 adjacent ((c1, c2, dist) : xs) c
@@ -53,6 +59,7 @@ adjacent ((c1, c2, dist) : xs) c
   | c2 == c = (c1, dist) : adjacent xs c
   | otherwise = adjacent xs c
 
+{- Complexity: O(n^2) -}
 pathDistance :: RoadMap -> Path -> Maybe Distance
 pathDistance _ [] = Just 0
 pathDistance _ [_] = Just 0
@@ -63,33 +70,24 @@ pathDistance r (c1 : c2 : cs)
       return (d1 + d2)
   | otherwise = Nothing
 
-{- rome :: RoadMap -> [City], returns the names of the cities with the
-highest number of roads connecting to them (i.e. the vertices with the
-highest degree). -}
-{- rome :: RoadMap -> [City] -}
-
+{- Complexity: O(n^3) -}
 rome :: RoadMap -> [City]
 rome rm = [c | (c, num) <- tuples, num == maximum (map snd tuples)]
   where
     tuples = [(c, length (adjacent rm c)) | c <- cities rm]
 
-{- isStronglyConnected :: RoadMap -> Bool, returns a boolean indicat-
-ing whether all the cities in the graph are connected in the roadmap (i.e.,
-if every city is reachable from every other city) -}
+{- Complexity: O(max(V+E,V^2)) -}
 isStronglyConnected :: RoadMap -> Bool
 isStronglyConnected rm = length (dfs_ rm [] [head (map (\(x, _, _) -> x) rm)]) == length (cities rm)
 
+{- Complexity: O(V+E) -}
 dfs_ :: RoadMap -> [City] -> [City] -> [City]
 dfs_ rm visited [] = visited
 dfs_ rm visited (x : xs)
   | x `elem` visited = dfs_ rm visited xs
   | otherwise = dfs_ rm (x : visited) (map fst (adjacent rm x) ++ xs)
 
-{- shortestPath :: RoadMap -> City -> City -> [Path], computes all
-shortest paths [RL99, BG20] connecting the two cities given as input.
-Note that there may be more than one path with the same total distance.
-If there are no paths between the input cities, then return an empty list.
-Note that the (only) shortest path between a city c and itself is [c]. -}
+{- Complexity: O(max(V+E,V^2)) -}
 shortestPath :: RoadMap -> City -> City -> [Path]
 shortestPath roadMap start end = findShortestPaths roadMap (bfs [[start]] [])
   where
@@ -107,18 +105,6 @@ shortestPath roadMap start end = findShortestPaths roadMap (bfs [[start]] [])
         distances = map (pathDistance r) paths -- find the distance of all paths
         validPaths = [(p, d) | (p, Just d) <- zip paths distances] -- filter out all the paths that do not have a valid distance, e.g "Nothing"
         minDistance = minimum distances -- find the minimum distance
-
-{- travelSales :: RoadMap -> Path, given a roadmap, returns a solution
-of the Traveling Salesman Problem (TSP). In this problem, a traveling
-salesperson has to visit each city exactly once and come back to the start-
-ing town. The problem is to find the shortest route, that is, the route
-whose total distance is minimum. This problem has a known solution
-using dynamic programming [RL99]. Any optimal TSP path will be ac-
-cepted and the function only needs to return one of them, so the starting
-city (which is also the ending city) is left to be chosen by each group. Note
-that the roadmap might not be a complete graph (i.e. a graph where all
-vertices are connected to all other vertices). If the graph does not have a
-TSP path, then return an empty list -}
 
 {- SET -}
 
@@ -173,7 +159,7 @@ updTable e'@(i,_) (Tbl (e@(j,_):r))
   | otherwise       = Tbl (e:r')
   where Tbl r'      = updTable e' (Tbl r)
 
-{- TSP Auxiliary Functions -}
+{- TSP Auxiliary Functions - Based on [R99] -}
 
 range :: ((Int,Set),(Int,Set)) -> [(Int, Set)]
 range ((startCity,startSet),(endCity,endSet)) = [(iCity,iSet) | iCity <-[startCity..endCity], iSet <- [startSet..endSet]]
@@ -201,8 +187,9 @@ tsp rm = findTable t (n,fullSet (n-1))
 
 {- TSP -}
 
+{- Complexity: O(n^2 * 2^n) -}
 travelSales :: RoadMap -> Path
-travelSales rm 
+travelSales rm
   | isStronglyConnected rm = map (\x -> show (x-1)) (snd (tsp rm))
   | otherwise = []
 
