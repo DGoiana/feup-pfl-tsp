@@ -1,3 +1,4 @@
+import qualified Data.Maybe
 -- import qualified Data.List
 -- import qualified Data.Array
 -- import qualified Data.Bits
@@ -39,6 +40,12 @@ distance ((x1, x2, d) : xs) c1 c2
   | x1 == c2 && x2 == c1 = Just d
   | otherwise = distance xs c1 c2
 
+intDistance:: RoadMap -> City -> City -> Distance
+intDistance rm c1 c2
+  | Data.Maybe.isNothing d =  1000000
+  | otherwise = Data.Maybe.fromJust d
+  where d = distance rm c1 c2
+
 adjacent :: RoadMap -> City -> [(City, Distance)]
 adjacent [] _ = []
 adjacent ((c1, c2, dist) : xs) c
@@ -62,7 +69,7 @@ highest degree). -}
 {- rome :: RoadMap -> [City] -}
 
 rome :: RoadMap -> [City]
-rome rm = [c | (c, num) <- tuples, num == maximum (map (\(x, y) -> y) tuples)]
+rome rm = [c | (c, num) <- tuples, num == maximum (map snd tuples)]
   where
     tuples = [(c, length (adjacent rm c)) | c <- cities rm]
 
@@ -70,13 +77,13 @@ rome rm = [c | (c, num) <- tuples, num == maximum (map (\(x, y) -> y) tuples)]
 ing whether all the cities in the graph are connected in the roadmap (i.e.,
 if every city is reachable from every other city) -}
 isStronglyConnected :: RoadMap -> Bool
-isStronglyConnected rm = length (dfs_ rm [] [(head (map (\(x, _, _) -> x) rm))]) == length (cities rm)
+isStronglyConnected rm = length (dfs_ rm [] [head (map (\(x, _, _) -> x) rm)]) == length (cities rm)
 
 dfs_ :: RoadMap -> [City] -> [City] -> [City]
 dfs_ rm visited [] = visited
 dfs_ rm visited (x : xs)
-  | elem x visited = dfs_ rm visited xs
-  | otherwise = dfs_ rm (x : visited) ((map (\(c, _) -> c) (adjacent rm x)) ++ xs)
+  | x `elem` visited = dfs_ rm visited xs
+  | otherwise = dfs_ rm (x : visited) (map fst (adjacent rm x) ++ xs)
 
 {- shortestPath :: RoadMap -> City -> City -> [Path], computes all
 shortest paths [RL99, BG20] connecting the two cities given as input.
@@ -112,8 +119,92 @@ city (which is also the ending city) is left to be chosen by each group. Note
 that the roadmap might not be a complete graph (i.e. a graph where all
 vertices are connected to all other vertices). If the graph does not have a
 TSP path, then return an empty list -}
+
+{- SET -}
+
+type Set = Int
+
+emptySet :: Set
+emptySet = 0
+
+isEmpty :: Set -> Bool
+isEmpty n = n==0
+
+maxSet :: Set
+maxSet = truncate (logBase 2 (fromIntegral (maxBound::Int))) - 1
+
+fullSet :: Set -> Set
+fullSet n | (n >= 0) && (n<=maxSet) = 2^(n+1)-2
+          | otherwise = -1
+
+addSet :: Int -> Set -> Set
+addSet i s = d' * e + m
+        where (d,m) = divMod s e
+              e = 2^i
+              d' = if odd d then d else d+1
+
+delSet:: Int -> Set -> Set
+delSet i s = d' * e + m
+        where (d,m) = divMod s e
+              e = 2^i
+              d' = if odd d then d-1 else d
+
+set2List :: Set -> [Int]
+set2List s = s21 s 0
+    where s21 0 _ =               []
+          s21 n i | odd n =        i : s21 (n `div` 2) (i+1)
+                 | otherwise =    s21 (n `div` 2) (i+1)
+
+{- TABLE -}
+newtype Table a b = Tbl [(b,a)] deriving (Show)
+
+newTable :: [(b, a)] -> Table a b
+newTable = Tbl
+findTable :: Eq t => Table a t -> t -> a
+findTable (Tbl []) i = error "findTable: item not found in table"
+findTable (Tbl ((j,v):r)) i
+  | i==j = v
+  | otherwise = findTable (Tbl r) i
+
+updTable :: Eq a1 => (a1, a2) -> Table a2 a1 -> Table a2 a1
+updTable e (Tbl []) = Tbl [e]
+updTable e'@(i,_) (Tbl (e@(j,_):r))
+  | i==j          = Tbl (e':r)
+  | otherwise       = Tbl (e:r')
+  where Tbl r'      = updTable e' (Tbl r)
+
+{- TSP Auxiliary Functions -}
+
+range :: ((Int,Set),(Int,Set)) -> [(Int, Set)]
+range ((startCity,startSet),(endCity,endSet)) = [(iCity,iSet) | iCity <-[startCity..endCity], iSet <- [startSet..endSet]]
+
+dynamic :: (Table entry TspCoord -> TspCoord -> entry) -> (TspCoord,TspCoord) -> Table entry TspCoord
+dynamic compute bnds = t
+  where t = newTable (map ( \coord -> ( coord , compute t coord) ) (range bnds) )
+
+type TspCoord = (Int, Set)
+type TspEntry = (Int,[Int])
+
+compTsp :: RoadMap -> Int -> Table TspEntry TspCoord -> TspCoord -> TspEntry
+compTsp rm n a (i,k)
+  | isEmpty k = (intDistance rm (show (i-1)) (show (n-1)),[i,n])
+  | otherwise = minimum [ addFst (findTable a (j,delSet j k)) (intDistance rm (show (i-1)) (show (j-1))) | j <- set2List k]
+  where addFst (c,p) w = (w+c,i:p)
+
+bndsTsp :: Int -> ((Int,Set),(Int,Set))
+bndsTsp n = ((1,emptySet),(n,fullSet n))
+
+tsp:: RoadMap -> TspEntry
+tsp rm = findTable t (n,fullSet (n-1))
+  where n = length (cities rm)
+        t = dynamic (compTsp rm n) (bndsTsp n)
+
+{- TSP -}
+
 travelSales :: RoadMap -> Path
-travelSales = undefined
+travelSales rm 
+  | isStronglyConnected rm = map (\x -> show (x-1)) (snd (tsp rm))
+  | otherwise = []
 
 tspBruteForce :: RoadMap -> Path
 tspBruteForce = undefined -- only for groups of 3 people; groups of 2 people: do not edit this function
