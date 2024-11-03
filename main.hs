@@ -169,7 +169,7 @@ shortestPath roadMap start end = findShortestPaths roadMap (bfs [[start]] [])
         validPaths = [(p, d) | (p, Just d) <- zip paths distances] -- filter out all the paths that do not have a valid distance, e.g "Nothing"
         minDistance = minimum distances -- find the minimum distance
 
-{- SET -}
+{- SET - Based on [R99] -}
 
 type Set = Int
 
@@ -204,7 +204,7 @@ set2List s = s21 s 0
           s21 n i | odd n =        i : s21 (n `div` 2) (i+1)
                  | otherwise =    s21 (n `div` 2) (i+1)
 
-{- TABLE -}
+{- TABLE - Based on [R99] -}
 newtype Table a b = Tbl [(b,a)] deriving (Show)
 
 newTable :: [(b, a)] -> Table a b
