@@ -1,4 +1,4 @@
-# p1-pfl
+# Travelling Salesman 
 
 ## Group Members and Contribution
 
@@ -10,8 +10,28 @@ All of the work in this project was made equally.
 
 ## Shortest Path Implementation
 
-## Travelling Sales Person (TSP)
+### The solution:
 
+This solution uses a breadth-first search (BFS) strategy to explore all possible paths between the starting city and the ending city while keeping track of the shortest paths found.
+It starts with the initial path containing only the starting city and an empty result list. Then, the <code>bfs</code> function recursively starts exploring paths, following these steps:
+
+- Dequeue the current path to explore
+- Checks if the last city in the current path is the destination city
+- If it is, the path is added to the result list
+- If not, the algorithm generates new paths to explore, by appending adjacent cities that have not been visited yet in the current path
+
+After this, the <code>findShortestPaths</code> function filters through all valid paths (distance > 0), calculating their distances and returning only those that match the minimum one.
+
+### Data structures:
+
+We did not use any auxiliar data structure in this implementation.
+
+### Complexity Analysis
+
++ **Time Complexity**: The time complexity of the algorithm is O(V + E), V being the number of Cities and E being the number of roads.
++ **Space Complexity**: The space complexity is O(V).
+
+## Travelling Sales Person (TSP)
 
 ### The solution:
 

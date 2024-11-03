@@ -130,7 +130,7 @@ rome rm = [c | (c, num) <- tuples, num == maximum (map snd tuples)]
 Description: Determines if all cities are connected.
 Arguments:
   - roadMap    : a roadMap
-Time Complexity: O(max(V+E,V^2))
+Time Complexity: O(V+E)
 Return: If all of the cities in the roadMap are connected.
 -}
 isStronglyConnected :: RoadMap -> Bool
@@ -148,7 +148,7 @@ Arguments:
   - roadMap    : a roadMap
   - start      : start city
   - end        : end city
-Time Complexity: O(max(V+E,V^2))
+Time Complexity: O(V+E)
 Return: The shortest path between the two cities.
 -}
 shortestPath :: RoadMap -> City -> City -> [Path]
@@ -222,13 +222,24 @@ updTable e'@(i,_) (Tbl (e@(j,_):r))
   | otherwise       = Tbl (e:r')
   where Tbl r'      = updTable e' (Tbl r)
 
-{- TSP Auxiliary Functions - Based on [R99] -}
-range :: ((Int,Set),(Int,Set)) -> [(Int, Set)]
-range ((startCity,startSet),(endCity,endSet)) = [(iCity,iSet) | iCity <-[startCity..endCity], iSet <- [startSet..endSet]]
+{- Auxiliary Functions - Based on [R99] -}
+rangeTSP :: ((Int,Set),(Int,Set)) -> [(Int, Set)]
+rangeTSP ((startCity,startSet),(endCity,endSet)) = [(iCity,iSet) | iCity <-[startCity..endCity], iSet <- [startSet..endSet]]
 
-dynamic :: (Table entry TspCoord -> TspCoord -> entry) -> (TspCoord,TspCoord) -> Table entry TspCoord
-dynamic compute bnds = t
-  where t = newTable (map ( \coord -> ( coord , compute t coord) ) (range bnds) )
+-- Not used
+rangeASP :: ((Int,Int,Int),(Int,Int,Int)) -> [(Int, Int, Int)]
+rangeASP ((startI,startJ,startK),(endI,endJ,endK)) = [(iI,iJ,iK) | iI <- [startI..endI],iJ <- [startJ..endJ], iK <- [startK..endK]]
+
+dynamicTSP :: (Table entry TspCoord -> TspCoord -> entry) -> (TspCoord,TspCoord) -> Table entry TspCoord
+dynamicTSP compute bnds = t
+  where t = newTable (map ( \coord -> ( coord , compute t coord) ) (rangeTSP bnds) )
+
+-- Not used
+dynamicASP :: (Table entry AspCoord -> AspCoord -> entry) -> (AspCoord,AspCoord) -> Table entry AspCoord
+dynamicASP compute bnds = t
+  where t = newTable (map ( \coord -> ( coord , compute t coord) ) (rangeASP bnds) )
+
+{- TSP Auxiliary Functions - Based on [R99] -}
 
 type TspCoord = (Int, Set)
 type TspEntry = (Int,[Int])
@@ -245,7 +256,33 @@ bndsTsp n = ((1,emptySet),(n,fullSet n))
 tsp:: RoadMap -> TspEntry
 tsp rm = findTable t (n,fullSet (n-1))
   where n = length (cities rm)
-        t = dynamic (compTsp rm n) (bndsTsp n)
+        t = dynamicTSP (compTsp rm n) (bndsTsp n)
+
+{- Shortest Path Auxiliary Functions - Based on [R99] -}
+
+-- Not used
+type AspCoord = (Int,Int,Int)
+type AspEntry = (Int,[Int])
+
+-- Not used
+compAsp :: RoadMap -> Table AspEntry AspCoord -> AspCoord -> AspEntry
+compAsp rm c (i,j,k)
+  | k == 0 = (intDistance rm (show (i-1)) (show (j-1)), if i==j then [i] else [i,j])
+  | otherwise = let (v1,p)   = findTable c (i,j,k-1)
+                    (a,p1)   = findTable c (i,k,k-1)
+                    (b,_:p2) = findTable c (k,j,k-1)
+                    v2 = a+b
+                in if v1 < v2 then (v1,p)  else (v2,p1++p2)
+
+-- Not used
+bndsAsp :: Int -> ((Int,Int,Int),(Int,Int,Int))
+bndsAsp n = ((1,1,0),(n,n,n))
+
+-- Not used
+asp :: RoadMap -> Int -> Int -> [City]
+asp rm i j = map (\x -> show (x-1)) (snd (findTable t (i,j,n)))
+  where n = length (cities rm)
+        t = dynamicASP (compAsp rm) (bndsAsp n)
 
 {- TSP -}
 {-
