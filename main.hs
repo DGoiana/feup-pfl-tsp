@@ -226,18 +226,9 @@ updTable e'@(i,_) (Tbl (e@(j,_):r))
 rangeTSP :: ((Int,Set),(Int,Set)) -> [(Int, Set)]
 rangeTSP ((startCity,startSet),(endCity,endSet)) = [(iCity,iSet) | iCity <-[startCity..endCity], iSet <- [startSet..endSet]]
 
--- Not used
-rangeASP :: ((Int,Int,Int),(Int,Int,Int)) -> [(Int, Int, Int)]
-rangeASP ((startI,startJ,startK),(endI,endJ,endK)) = [(iI,iJ,iK) | iI <- [startI..endI],iJ <- [startJ..endJ], iK <- [startK..endK]]
-
 dynamicTSP :: (Table entry TspCoord -> TspCoord -> entry) -> (TspCoord,TspCoord) -> Table entry TspCoord
 dynamicTSP compute bnds = t
   where t = newTable (map ( \coord -> ( coord , compute t coord) ) (rangeTSP bnds) )
-
--- Not used
-dynamicASP :: (Table entry AspCoord -> AspCoord -> entry) -> (AspCoord,AspCoord) -> Table entry AspCoord
-dynamicASP compute bnds = t
-  where t = newTable (map ( \coord -> ( coord , compute t coord) ) (rangeASP bnds) )
 
 {- TSP Auxiliary Functions - Based on [R99] -}
 
@@ -257,32 +248,6 @@ tsp:: RoadMap -> TspEntry
 tsp rm = findTable t (n,fullSet (n-1))
   where n = length (cities rm)
         t = dynamicTSP (compTsp rm n) (bndsTsp n)
-
-{- Shortest Path Auxiliary Functions - Based on [R99] -}
-
--- Not used
-type AspCoord = (Int,Int,Int)
-type AspEntry = (Int,[Int])
-
--- Not used
-compAsp :: RoadMap -> Table AspEntry AspCoord -> AspCoord -> AspEntry
-compAsp rm c (i,j,k)
-  | k == 0 = (intDistance rm (show (i-1)) (show (j-1)), if i==j then [i] else [i,j])
-  | otherwise = let (v1,p)   = findTable c (i,j,k-1)
-                    (a,p1)   = findTable c (i,k,k-1)
-                    (b,_:p2) = findTable c (k,j,k-1)
-                    v2 = a+b
-                in if v1 < v2 then (v1,p)  else (v2,p1++p2)
-
--- Not used
-bndsAsp :: Int -> ((Int,Int,Int),(Int,Int,Int))
-bndsAsp n = ((1,1,0),(n,n,n))
-
--- Not used
-asp :: RoadMap -> Int -> Int -> [City]
-asp rm i j = map (\x -> show (x-1)) (snd (findTable t (i,j,n)))
-  where n = length (cities rm)
-        t = dynamicASP (compAsp rm) (bndsAsp n)
 
 {- TSP -}
 {-
