@@ -24,11 +24,25 @@ citiesRec :: RoadMap -> [City]
 citiesRec [] = []
 citiesRec ((c1, c2, _dist) : xs) = [c1, c2] ++ cities xs
 
-{- Complexity: O(n^2) -}
+{-
+Description: Determines the cities in a RoadMap.
+Arguments:
+  - roadMap: roadMap where cities will be derived 
+Time Complexity: O(n) 
+Return: List of cities in roadmap.
+-}
 cities :: RoadMap -> [City]
 cities roadMap = removeDuplicates (citiesRec roadMap)
 
-{- Complexity: O(n) -}
+{-
+Description: Determines if two cities are adjacent.
+Arguments:
+  - roadMap    : a roadMap 
+  - firstCity  : one of the cities
+  - secondCity : another city
+Time Complexity: O(n) 
+Return: If the cities are adjacent.
+-}
 areAdjacent :: RoadMap -> City -> City -> Bool
 areAdjacent [] c1 c2 = False
 areAdjacent ((x1, x2, _dist) : xs) c1 c2
@@ -36,7 +50,15 @@ areAdjacent ((x1, x2, _dist) : xs) c1 c2
   | x1 == c2 && x2 == c1 = True
   | otherwise = areAdjacent xs c1 c2
 
-{- Complexity: O(n) -}
+{-
+Description: Determines the distance between two cities.
+Arguments:
+  - roadMap    : a roadMap
+  - firstCity  : one of the cities
+  - secondCity : another city
+Time Complexity: O(n)
+Return: Nothing if there are no edge and the Just distance if there is.
+-}
 distance :: RoadMap -> City -> City -> Maybe Distance
 distance [] c1 c2 = Nothing
 distance ((x1, x2, d) : xs) c1 c2
@@ -44,14 +66,28 @@ distance ((x1, x2, d) : xs) c1 c2
   | x1 == c2 && x2 == c1 = Just d
   | otherwise = distance xs c1 c2
 
-{- Complexity: O(1) -}
-{- Ignore suggestions, cannot import Data.Maybe -}
+{-
+Description: Determines the integer value of the distance between two cities.
+Arguments:
+  - roadMap    : a roadMap
+  - firstCity  : one of the cities
+  - secondCity : another city
+Time Complexity: O(1)
+Return: 100000 if there are no edge and the distance if there is.
+-}
 intDistance:: RoadMap -> City -> City -> Distance
 intDistance rm c1 c2 = case distance rm c1 c2 of
   Nothing -> 100000
   Just d -> d
 
-{- Complexity: O(n) -}
+{-
+Description: Determines a list of all the adjacent cities to a given city.
+Arguments:
+  - roadMap    : a roadMap 
+  - city       : one of the cities
+Time Complexity: O(n)
+Return: List of the cities that are adjacent to city.
+-}
 adjacent :: RoadMap -> City -> [(City, Distance)]
 adjacent [] _ = []
 adjacent ((c1, c2, dist) : xs) c
@@ -59,7 +95,14 @@ adjacent ((c1, c2, dist) : xs) c
   | c2 == c = (c1, dist) : adjacent xs c
   | otherwise = adjacent xs c
 
-{- Complexity: O(n^2) -}
+{-
+Description: Determines the sum of distances in a path.
+Arguments:
+  - roadMap    : a roadMap 
+  - path       : a path
+Time Complexity: O(n^2)
+Return: Nothing if there is no distance and the sum of distances if there is.
+-}
 pathDistance :: RoadMap -> Path -> Maybe Distance
 pathDistance _ [] = Just 0
 pathDistance _ [_] = Just 0
@@ -70,24 +113,44 @@ pathDistance r (c1 : c2 : cs)
       return (d1 + d2)
   | otherwise = Nothing
 
-{- Complexity: O(n^3) -}
+{-
+Description: Determines the sum of distances in a path.
+Arguments:
+  - roadMap    : a roadMap
+  - path       : a path
+Time Complexity: O(n^2)
+Return: Nothing if there is no distance and the sum of distances if there is.
+-}
 rome :: RoadMap -> [City]
 rome rm = [c | (c, num) <- tuples, num == maximum (map snd tuples)]
   where
     tuples = [(c, length (adjacent rm c)) | c <- cities rm]
 
-{- Complexity: O(max(V+E,V^2)) -}
+{-
+Description: Determines if all cities are connected.
+Arguments:
+  - roadMap    : a roadMap
+Time Complexity: O(max(V+E,V^2))
+Return: If all of the cities in the roadMap are connected.
+-}
 isStronglyConnected :: RoadMap -> Bool
 isStronglyConnected rm = length (dfs_ rm [] [head (map (\(x, _, _) -> x) rm)]) == length (cities rm)
 
-{- Complexity: O(V+E) -}
 dfs_ :: RoadMap -> [City] -> [City] -> [City]
 dfs_ rm visited [] = visited
 dfs_ rm visited (x : xs)
   | x `elem` visited = dfs_ rm visited xs
   | otherwise = dfs_ rm (x : visited) (map fst (adjacent rm x) ++ xs)
 
-{- Complexity: O(max(V+E,V^2)) -}
+{-
+Description: Determines the shortest path between two cities.
+Arguments:
+  - roadMap    : a roadMap
+  - start      : start city
+  - end        : end city
+Time Complexity: O(max(V+E,V^2))
+Return: The shortest path between the two cities.
+-}
 shortestPath :: RoadMap -> City -> City -> [Path]
 shortestPath roadMap start end = findShortestPaths roadMap (bfs [[start]] [])
   where
@@ -160,7 +223,6 @@ updTable e'@(i,_) (Tbl (e@(j,_):r))
   where Tbl r'      = updTable e' (Tbl r)
 
 {- TSP Auxiliary Functions - Based on [R99] -}
-
 range :: ((Int,Set),(Int,Set)) -> [(Int, Set)]
 range ((startCity,startSet),(endCity,endSet)) = [(iCity,iSet) | iCity <-[startCity..endCity], iSet <- [startSet..endSet]]
 
@@ -186,8 +248,15 @@ tsp rm = findTable t (n,fullSet (n-1))
         t = dynamic (compTsp rm n) (bndsTsp n)
 
 {- TSP -}
-
-{- Complexity: O(n^2 * 2^n) -}
+{-
+Description: Determines the shortest path for trasversing all of the cities in a roadMap (starting in the last city).
+Arguments:
+  - roadMap    : a roadMap
+  - start      : start city
+  - end        : end city
+Time Complexity: O(n^2 * 2^n)
+Return: The path of all the cities, starting on the last, where the cost is minimized.
+-}
 travelSales :: RoadMap -> Path
 travelSales rm
   | isStronglyConnected rm = map (\x -> show (x-1)) (snd (tsp rm))
